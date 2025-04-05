@@ -1,64 +1,60 @@
-const { DataTypes } = require("sequelize")
-const sequelize = require("../database")
-const bcrypt = require("bcryptjs")
+const { DataTypes } = require('sequelize');
+const sequelize = require('../database'); // Já está correto
+const bcrypt = require('bcryptjs');
 
 const User = sequelize.define(
-  "User",
+  'User',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [2, 255],
-      },
     },
     document: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      comment: "CPF or CNPJ",
-      validate: {
-        notEmpty: true,
-      },
     },
     prefecture: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
     },
     photo: {
       type: DataTypes.STRING,
-      allowNull: true,
     },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [6, 255],
-      },
+    },
+    created_at: { // Adicionado explicitamente devido a timestamps: true
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updated_at: { // Adicionado explicitamente devido a timestamps: true
+      type: DataTypes.DATE,
+      allowNull: false,
     },
   },
   {
-    tableName: "users",
-    timestamps: true,
-  },
-)
+    tableName: 'users',
+    underscored: true,
+  }
+);
 
 // Hash password before saving
 User.beforeCreate(async (user) => {
-  user.password = await bcrypt.hash(user.password, 10)
-})
+  user.password = await bcrypt.hash(user.password, 10);
+});
 
 // Add hook for password hashing during update
 User.beforeUpdate(async (user) => {
-  if (user.changed("password")) {
-    user.password = await bcrypt.hash(user.password, 10)
+  if (user.changed('password')) {
+    user.password = await bcrypt.hash(user.password, 10);
   }
-})
+});
 
-module.exports = User
-
+module.exports = User;

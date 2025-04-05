@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const authMiddleware = require('../middlewares/auth');
+const authMiddleware = require('../middlewares/authMiddleware'); // Corrigido de '../middlewares/auth'
 const multer = require('multer');
 const uploadConfig = require('../config/upload');
 
@@ -13,21 +13,10 @@ router.post('/login', authController.login);
 router.post('/users/document', authController.getUsersByDocument);
 
 // Rotas protegidas
-router.put('/users/profile', 
-  authMiddleware, 
-  upload.single('photo'), 
-  authController.updateUser
-);
-
-router.get('/users/profile',
-  authMiddleware,
-  authController.getProfile
-);
+router.put('/users/profile', authMiddleware, upload.single('photo'), authController.updateUser);
+router.get('/users/profile', authMiddleware, authController.getProfile);
 
 // Nova rota para excluir foto de perfil
-router.delete('/user/delete-photo',
-  authMiddleware,
-  authController.deletePhoto
-);
+router.delete('/user/delete-photo', authMiddleware, authController.deletePhoto);
 
 module.exports = router;
