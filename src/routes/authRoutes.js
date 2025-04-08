@@ -15,8 +15,6 @@ router.post('/users/document', authController.getUsersByDocument);
 // Rotas protegidas
 router.put('/users/profile', authMiddleware, upload.single('photo'), authController.updateUser);
 router.get('/users/profile', authMiddleware, authController.getProfile);
-
-// Nova rota para excluir foto de perfil
-router.delete('/user/delete-photo', authMiddleware, authController.deletePhoto);
+router.delete('/users/delete-photo', authMiddleware, authController.deletePhoto);
 
 module.exports = router;
