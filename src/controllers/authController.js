@@ -28,7 +28,7 @@ const register = async (req, res) => {
 
     user.password = undefined;
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'sua_chave_secreta_padrao', {
       expiresIn: '1d'
     });
 
@@ -71,10 +71,13 @@ const getUsersByDocument = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { document, prefecture, password } = req.body;
+    console.log('Login attempt:', { document, prefecture, hasPassword: !!password });
 
     const user = await User.findOne({
       where: { document }
     });
+
+    console.log('User found:', user ? 'Yes' : 'No');
 
     if (!user) {
       return res.status(400).json({ error: 'Usuário não encontrado' });
@@ -82,6 +85,7 @@ const login = async (req, res) => {
 
     // Se apenas o documento foi enviado, retorna a prefeitura
     if (!prefecture && !password) {
+      console.log('Returning prefecture only');
       return res.status(200).json({
         id: user.id,
         prefecture: user.prefecture
@@ -90,11 +94,13 @@ const login = async (req, res) => {
 
     // Verifica se a prefeitura corresponde
     if (prefecture && prefecture !== user.prefecture) {
+      console.log('Prefecture mismatch:', { provided: prefecture, stored: user.prefecture });
       return res.status(400).json({ error: 'Prefeitura não corresponde ao usuário' });
     }
 
     // Verifica a senha apenas quando todos os campos estão presentes
     if (document && prefecture && password) {
+      console.log('Validating password');
       const validPassword = await bcrypt.compare(password, user.password);
       if (!validPassword) {
         return res.status(400).json({ error: 'Senha inválida' });
@@ -102,9 +108,10 @@ const login = async (req, res) => {
 
       user.password = undefined;
 
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'sua_chave_secreta_padrao', {
         expiresIn: '1d'
       });
+      console.log('Token generated:', token);
 
       return res.status(200).json({ user, token });
     }
