@@ -27,9 +27,17 @@ const createBasket = async (req, res) => {
       research_documents,
     } = req.body;
 
+    // Validar campos obrigatórios
+    if (!description) {
+      return res.status(400).json({ error: 'Descrição é obrigatória' });
+    }
+
+    const now = new Date();
+    const formattedDate = now.toLocaleString('pt-BR');
+
     const basket = await Basket.create({
       id: Date.now().toString(),
-      date: date || new Date().toLocaleString('pt-BR'),
+      date: date || formattedDate,
       status: status || 'EM ANDAMENTO',
       description,
       user_id: req.user.id,
@@ -45,7 +53,7 @@ const createBasket = async (req, res) => {
       quotation_deadline,
       possession,
       expense_element,
-      request_date: request_date || new Date().toLocaleString('pt-BR'),
+      request_date: request_date || formattedDate,
       correction_index,
       correction_target,
       correction_start_date,
@@ -56,6 +64,12 @@ const createBasket = async (req, res) => {
     return res.status(201).json(basket);
   } catch (error) {
     console.error('Erro ao criar cesta:', error);
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        details: error.errors.map(e => e.message)
+      });
+    }
     return res.status(500).json({ error: 'Erro ao criar cesta' });
   }
 };
@@ -153,47 +167,88 @@ const uploadFiles = async (req, res) => {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
+    if (!file_category || !['basket', 'purchase'].includes(file_category)) {
+      return res.status(400).json({ error: 'Categoria de arquivo inválida' });
+    }
+
     const basket = await Basket.findOne({ where: { id, user_id: req.user.id } });
     if (!basket) {
+      // Se a cesta não for encontrada, exclui os arquivos físicos
+      files.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (err) {
+          console.error('Erro ao excluir arquivo:', err);
+        }
+      });
       return res.status(404).json({ error: 'Cesta não encontrada' });
     }
 
     const uploadedFiles = [];
     for (const file of files) {
-      const now = new Date();
-      const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
+      try {
+        const now = new Date();
+        const formattedDate = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}h${String(now.getMinutes()).padStart(2, '0')}`;
 
-      const fileSize =
-        file.size < 1024
-          ? `${file.size} B`
-          : file.size < 1024 * 1024
-          ? `${(file.size / 1024).toFixed(2)} KB`
-          : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+        const fileSize =
+          file.size < 1024
+            ? `${file.size} B`
+            : file.size < 1024 * 1024
+            ? `${(file.size / 1024).toFixed(2)} KB`
+            : `${(file.size / (1024 * 1024)).toFixed(2)} MB`;
 
-      const fileExtension = file.originalname.split('.').pop().toLowerCase();
-      let fileType = 'other';
-      if (['pdf'].includes(fileExtension)) fileType = 'pdf';
-      else if (['doc', 'docx'].includes(fileExtension)) fileType = 'word';
-      else if (['xls', 'xlsx'].includes(fileExtension)) fileType = 'excel';
-      else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) fileType = 'image';
-      else if (['zip', 'rar', '7z'].includes(fileExtension)) fileType = 'archive';
+        const fileExtension = file.originalname.split('.').pop().toLowerCase();
+        let fileType = 'other';
+        if (['pdf'].includes(fileExtension)) fileType = 'pdf';
+        else if (['doc', 'docx'].includes(fileExtension)) fileType = 'word';
+        else if (['xls', 'xlsx'].includes(fileExtension)) fileType = 'excel';
+        else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension)) fileType = 'image';
+        else if (['zip', 'rar', '7z'].includes(fileExtension)) fileType = 'archive';
 
-      const fileRecord = await File.create({
-        name: file.originalname,
-        size: fileSize,
-        sent_date: formattedDate,
-        type: fileType,
-        path: file.path,
-        basket_id: id,
-        file_category,
-      });
+        try {
+          const fileRecord = await File.create({
+            name: file.originalname,
+            size: fileSize,
+            sent_date: formattedDate,
+            type: fileType,
+            path: file.filename, // Usando filename em vez de path
+            basket_id: id,
+            file_category,
+          });
 
-      uploadedFiles.push(fileRecord);
+          uploadedFiles.push(fileRecord);
+        } catch (error) {
+          console.error('Erro ao salvar arquivo no banco:', error);
+          // Se houver erro ao salvar no banco, exclui o arquivo físico
+          try {
+            fs.unlinkSync(file.path);
+          } catch (err) {
+            console.error('Erro ao excluir arquivo após falha:', err);
+          }
+          throw error;
+        }
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error);
+        // Se houver erro ao processar um arquivo, tenta excluir o arquivo físico
+        try {
+          fs.unlinkSync(file.path);
+        } catch (err) {
+          console.error('Erro ao excluir arquivo após falha:', err);
+        }
+        throw error;
+      }
     }
 
     return res.status(200).json(uploadedFiles);
   } catch (error) {
     console.error('Erro ao fazer upload de arquivos:', error);
+    // Se for um erro de validação do Sequelize, retorna mensagem específica
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ 
+        error: 'Dados inválidos para o arquivo',
+        details: error.errors.map(e => e.message)
+      });
+    }
     return res.status(500).json({ error: 'Erro ao fazer upload de arquivos' });
   }
 };

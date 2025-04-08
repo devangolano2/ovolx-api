@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../database'); // Corrigido de '../config/database' para '../database'
+const sequelize = require('../database'); 
 const Basket = require('./Basket');
 
 const File = sequelize.define(
@@ -18,7 +18,7 @@ const File = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    sent_date: { // Alterado de sentDate para sent_date
+    sent_date: { 
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -29,7 +29,7 @@ const File = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    basket_id: { // Alterado de basketId para basket_id
+    basket_id: { 
       type: DataTypes.STRING,
       allowNull: false,
       references: {
@@ -37,30 +37,15 @@ const File = sequelize.define(
         key: 'id',
       },
     },
-    file_category: { // Alterado de fileCategory para file_category
+    file_category: { 
       type: DataTypes.ENUM('basket', 'purchase'),
       allowNull: false,
-    },
-    created_at: { // Adicionado explicitamente devido a timestamps: true
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    updated_at: { // Adicionado explicitamente devido a timestamps: true
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      // Remova allowNull: false
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      // Remova allowNull: false
-    },
+    }
   },
   {
     tableName: 'files',
     underscored: true,
+    timestamps: true 
   }
 );
 

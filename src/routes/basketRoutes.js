@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
 const basketController = require('../controllers/basketController');
 const fileController = require('../controllers/fileController'); // Adicionado
 const authMiddleware = require('../middlewares/authMiddleware');
@@ -7,7 +8,8 @@ const multer = require('multer');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'src/uploads/');
+    const uploadsDir = path.resolve(__dirname, '..', '..', 'uploads');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
