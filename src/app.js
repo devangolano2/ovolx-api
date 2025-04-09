@@ -7,7 +7,7 @@ const app = express();
 
 // Configuração do CORS
 const corsOptions = {
-  origin: 'http://localhost:5173', // URL do frontend
+  origin: ['http://localhost:5173', 'https://evolx-pricing.vercel.app'], // URLs permitidas
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
