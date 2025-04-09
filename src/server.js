@@ -1,18 +1,19 @@
 require('dotenv').config();
 const app = require('./app');
-const sequelize = require('./database'); // Corrigido de './database/index' para './database'
+const sequelize = require('./config/database');
 
 // Importar os modelos para garantir que sejam registrados
 require('./models/User');
 require('./models/Basket');
 require('./models/File');
+require('./models/Product');
 
 const PORT = process.env.PORT || 3000;
 
 // Criar a pasta uploads se ela não existir
 const fs = require('fs');
 const path = require('path');
-const uploadsDir = path.resolve(__dirname, 'uploads');
+const uploadsDir = path.resolve(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('Pasta uploads criada com sucesso.');
@@ -98,7 +99,6 @@ async function startServer() {
     });
   } catch (err) {
     console.error('Erro crítico ao iniciar o servidor:', err.message);
-    console.warn('O servidor não pôde ser iniciado devido a um erro crítico.');
     process.exit(1);
   }
 }
